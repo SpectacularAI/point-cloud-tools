@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from parquet_to_splat import splat_columns
 
 def splat_to_data_frame(input_file):
-    float_cols, uint8_cols, int_cols = splat_columns()
+    float_cols, uint8_cols, uint8_types = splat_columns()
     
     n_p = len(uint8_cols) // 4
     packed_cols = float_cols + ['packed_%d' % i for i in range(n_p)]
@@ -28,11 +28,13 @@ def splat_to_data_frame(input_file):
         sub_idx = i % 4
         packed_col = df['packed_%d' % col_idx]
         scale = 1
-        if c not in int_cols:
-             scale = 1 / float(0xff) 
-        #else:
-        #    print(packed_col)
-        unpacked_cols[c] = ((packed_col.to_numpy().astype(int) // (2**(sub_idx*8))) % 256) * scale
+        
+        v0, v1 = uint8_types[c]
+        col_uint8 = (packed_col.to_numpy().astype(int) // (2**(sub_idx*8))) % 256
+        
+        #import matplotlib.pyplot as plt
+        #plt.hist(col_uint8, bins=256); plt.title(c); plt.show()
+        unpacked_cols[c] = col_uint8 * ((v1 - v0) / 255) + v0
     
     for i in range(n_p):
         df.pop('packed_%d' % i)

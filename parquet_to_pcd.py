@@ -9,8 +9,8 @@ def dataframe_to_pcd(df, out_file, include_rgb=False):
     cols = ['x', 'y', 'z']
     if include_rgb:
         cols.append('rgb')
-        
-        packed_rgb = (df['r'].astype(np.uint32) * (2**16)) + (df['g'].astype(np.uint32) * (2**8)) + df['b']
+        r,g,b = [df[c].astype(np.uint32) for c in 'rgb']
+        packed_rgb = (r * (2**16)) + (g * (2**8)) + b
         df['rgb'] = packed_rgb.apply(lambda x: struct.unpack('f', struct.pack('I', x))[0])
         
     # print(df)
