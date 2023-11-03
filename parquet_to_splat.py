@@ -66,8 +66,8 @@ def dataframe_to_flat_array(df, keep_spherical_harmonics=False):
     float_cols, uint8_cols, uint8_ranges = splat_columns()
     
     if keep_spherical_harmonics:
-        for c in 'rgb':
-            for i in range(16):
+        for i in range(16):
+            for c in 'rgb':
                 float_cols.append('%s_sh%d' % (c, i))
     
     dtypes = [(f, 'float32') for f in float_cols] + [(u, 'uint8') for u in uint8_cols]
