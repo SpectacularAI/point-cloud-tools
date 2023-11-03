@@ -12,7 +12,7 @@ OUT_SPLAT="$2"
 TMP_PARQ=$(mktemp)
 
 python filter_parquet.py -x=$X -y=$Y -z=$Z --radius=$RADIUS "$IN_PARQUET" "$TMP_PARQ"
-python parquet_to_splat.py "$TMP_PARQ" "$OUT_SPLAT"
+python parquet_to_splat.py "$TMP_PARQ" "$OUT_SPLAT" ${@:3}
 
 if [ "$PCD_OUT" != "none" ]; then
     python splat_to_parquet.py "$OUT_SPLAT" "$TMP_PARQ"
