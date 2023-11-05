@@ -50,6 +50,23 @@ def convert_data_to_splat(df):
     
     return df
     
+def rename_inria_columns(df):
+    r = {
+        'opacity': 'alpha0',
+        'rot_0': 'cov_q3',
+        'rot_1': 'cov_q0',
+        'rot_2': 'cov_q1',
+        'rot_3': 'cov_q2'
+    }
+    for i in range(3):
+        r['scale_%d' % i] = 'cov_s%d' % i
+        r['f_dc_%d' % i] = '%s_sh0' % ('rgb'[i])
+        
+    for i in range(45):
+        r['f_rest_%d' % i] = '%s_sh%d' % ('rgb'[i // 15], ((i%15) + 1))
+        
+    return df.rename(columns=r, inplace=False)
+    
 def analyze_columns(df):
     print(df.columns)
     import matplotlib.pyplot as plt
@@ -58,7 +75,8 @@ def analyze_columns(df):
         cc = cc[np.isfinite(cc)]
         plt.hist(cc, bins=256); plt.title(c); plt.show()
 
-def dataframe_to_flat_array(df, keep_spherical_harmonics=False):
+def dataframe_to_flat_array(df, keep_spherical_harmonics=False, inria=False):
+    if inria: df = rename_inria_columns(df)
     df = convert_data_to_splat(df)
     
     # analyze_columns(df)
@@ -91,12 +109,13 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description='Parquet to Gaussian Splatting WebGL renderer flat data converter')
         parser.add_argument('input_file', type=argparse.FileType('rb'), help='Parquet input file')
         parser.add_argument('output_file', type=argparse.FileType('wb'), help='Splat output file')
-        parser.add_argument('--keep_spherical_harmonics', action='store_true')
+        parser.add_argument('-sh', '--keep_spherical_harmonics', action='store_true')
+        parser.add_argument('--inria', action='store_true', help='Assume Inria gaussian-splatting column names')
         return parser.parse_args()
     
     args = parse_args()
 
     df = pd.read_parquet(args.input_file)
-    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics)
+    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, inria=args.inria)
     flat_array.tofile(args.output_file)
 

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     
     args = parse_args()
 
-    df = pd.read_csv(args.input_file, usecols=['x','y','z'])
+    df = pd.read_csv(args.input_file)
     df = voxel_decimate(df, cell_size=args.cell_size)
-    df[['x','y','z']].to_csv(args.output_file, index=False)
+    df.to_csv(args.output_file, index=False)
 
