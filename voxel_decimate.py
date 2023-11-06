@@ -14,6 +14,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description='Parquet point cloud converter')
         parser.add_argument('input_file', type=argparse.FileType('rb'), help='CSV input file')
         parser.add_argument('output_file', type=argparse.FileType('wt'), help='CSV output file')
+        parser.add_argument('--exclude_file', type=str, default=None, help='Exclude points in same voxels with these')
         parser.add_argument('--cell_size', type=float, default=0.1)
         return parser.parse_args()
     
