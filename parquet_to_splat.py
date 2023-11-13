@@ -32,19 +32,19 @@ def convert_data_to_splat(df):
         return col
 
     for c in 'rgb':
-        df[c] = sh_zero_order(df['%s_sh0' % c]) * 255
+        if c not in df.columns:
+            df[c] = sh_zero_order(df['%s_sh0' % c]) * 255
     
     DEBUG_SCALING = 1
     for cov_i in range(3):
         c = 'cov_s%d' % cov_i
         df[c] = np.exp(df[c]) * DEBUG_SCALING
-        
-    INVERT = False
-    if INVERT:
-        qcols = [df['cov_q%d' % i] for i in range(4)]
-        for i in [1,2,3]: qcols[i] = -qcols[i]
+
+    NORMALIZE = True
+    if NORMALIZE:
+        inv_len = 1.0 / np.sqrt(np.sum(df[['cov_q%d' % i for i in range(4)]].values**2, axis=1))
         for i in range(4):
-            df['cov_q%d' % i] = qcols[i]
+            df['cov_q%d' % i] *= inv_len
             
     df['a'] = 1 / (1 + np.exp(-df['alpha0']))
     
@@ -53,17 +53,36 @@ def convert_data_to_splat(df):
 def rename_inria_columns(df):
     r = {
         'opacity': 'alpha0',
+        'rot_0': 'cov_q0',
+        'rot_1': 'cov_q1',
+        'rot_2': 'cov_q2',
+        'rot_3': 'cov_q3'
+    }
+    for i in range(3):
+        r['scale_%d' % i] = 'cov_s%d' % i
+        r['f_dc_%d' % i] = '%s_sh0' % ('rgb'[i])
+
+    for i in range(45):
+        r['f_rest_%d' % i] = '%s_sh%d' % ('rgb'[i // 15], ((i%15) + 1))
+
+    return df.rename(columns=r, inplace=False)
+
+def rename_nerfstudio_columns(df):    
+    # q0,q1,q2=xyz, q3=w
+    r = {
+        'opacity': 'alpha0',
         'rot_0': 'cov_q3',
         'rot_1': 'cov_q0',
         'rot_2': 'cov_q1',
-        'rot_3': 'cov_q2'
+        'rot_3': 'cov_q2',
+        'red': 'r',
+        'green': 'g',
+        'blue': 'b'
     }
     for i in range(3):
         r['scale_%d' % i] = 'cov_s%d' % i
         r['f_dc_%d' % i] = '%s_sh0' % ('rgb'[i])
         
-    for i in range(45):
-        r['f_rest_%d' % i] = '%s_sh%d' % ('rgb'[i // 15], ((i%15) + 1))
         
     return df.rename(columns=r, inplace=False)
     
@@ -75,10 +94,13 @@ def analyze_columns(df):
         cc = cc[np.isfinite(cc)]
         plt.hist(cc, bins=256); plt.title(c); plt.show()
 
-def dataframe_to_flat_array(df, keep_spherical_harmonics=False, inria=False):
-    if inria: df = rename_inria_columns(df)
+def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='nerfstudio'):
+    if input_format == 'inria':
+        df = rename_inria_columns(df)
+    elif input_format == 'nerfstudio':
+        df = rename_nerfstudio_columns(df)
+
     df = convert_data_to_splat(df)
-    
     # analyze_columns(df)
     
     float_cols, uint8_cols, uint8_ranges = splat_columns()
@@ -110,12 +132,12 @@ if __name__ == '__main__':
         parser.add_argument('input_file', type=argparse.FileType('rb'), help='Parquet input file')
         parser.add_argument('output_file', type=argparse.FileType('wb'), help='Splat output file')
         parser.add_argument('-sh', '--keep_spherical_harmonics', action='store_true')
-        parser.add_argument('--inria', action='store_true', help='Assume Inria gaussian-splatting column names')
+        parser.add_argument('-f', '--input_format', choices=['inria', 'nerfstudio', 'taichi'], default='nerfstudio')
         return parser.parse_args()
     
     args = parse_args()
 
     df = pd.read_parquet(args.input_file)
-    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, inria=args.inria)
+    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, input_format=args.input_format)
     flat_array.tofile(args.output_file)
 
