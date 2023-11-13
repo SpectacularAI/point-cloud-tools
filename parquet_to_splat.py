@@ -20,6 +20,19 @@ def splat_columns():
     for c in color_cols: uint8_ranges[c] = [0, 255]
     return float_cols, uint8_cols, uint8_ranges
 
+def multiply_quaternions_vectorized_wxyz(q1, q2):
+    # w1, x1, y1, z1 = q1
+    w1, x1, y1, z1 = q1[..., 0], q1[..., 1], q1[..., 2], q1[..., 3]
+    w2, x2, y2, z2 = q2
+    # w2, x2, y2, z2 = q2[..., 0], q2[..., 1], q2[..., 2], q2[..., 3]
+
+    w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+    x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+    y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+    z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+
+    return np.array([w, x, y, z]).T
+
 def convert_data_to_splat(df):
     # already converted
     if 'r_sh0' not in df.columns: return df
@@ -32,12 +45,27 @@ def convert_data_to_splat(df):
         return col
 
     for c in 'rgb':
-        df[c] = sh_zero_order(df['%s_sh0' % c]) * 255
+        if c not in df.columns:
+            df[c] = sh_zero_order(df['%s_sh0' % c]) * 255
     
     DEBUG_SCALING = 1
     for cov_i in range(3):
         c = 'cov_s%d' % cov_i
         df[c] = np.exp(df[c]) * DEBUG_SCALING
+    
+    CHANGE_CAM_CONVENTION = True
+    if CHANGE_CAM_CONVENTION:
+        from scipy.spatial.transform import Rotation as R
+        qx,qy,qz,qw = R.from_matrix(np.diag([1,-1,-1])).as_quat()
+        
+        qcols_wxyz = df[['cov_q%d' % i for i in [3,0,1,2]]].values
+        q1 = multiply_quaternions_vectorized_wxyz(qcols_wxyz, [qw,qx,qy,qz])
+        # wxyz -> xywz
+        w1, x1, y1, z1 = q1[..., 0], q1[..., 1], q1[..., 2], q1[..., 3]
+        qcols = [x1, y1, z1, w1]
+        
+        for i in range(4):
+            df['cov_q%d' % i] = qcols[i]
         
     INVERT = False
     if INVERT:
@@ -53,10 +81,10 @@ def convert_data_to_splat(df):
 def rename_inria_columns(df):
     r = {
         'opacity': 'alpha0',
-        'rot_0': 'cov_q3',
-        'rot_1': 'cov_q0',
-        'rot_2': 'cov_q1',
-        'rot_3': 'cov_q2'
+        'rot_0': 'cov_q0',
+        'rot_1': 'cov_q1',
+        'rot_2': 'cov_q2',
+        'rot_3': 'cov_q3'
     }
     for i in range(3):
         r['scale_%d' % i] = 'cov_s%d' % i
@@ -64,6 +92,24 @@ def rename_inria_columns(df):
         
     for i in range(45):
         r['f_rest_%d' % i] = '%s_sh%d' % ('rgb'[i // 15], ((i%15) + 1))
+        
+    return df.rename(columns=r, inplace=False)
+    
+def rename_nerfstudio_columns(df):
+    r = {
+        'opacity': 'alpha0',
+        'rot_0': 'cov_q3',
+        'rot_1': 'cov_q0',
+        'rot_2': 'cov_q1',
+        'rot_3': 'cov_q2',
+        'red': 'r',
+        'green': 'g',
+        'blue': 'b'
+    }
+    for i in range(3):
+        r['scale_%d' % i] = 'cov_s%d' % i
+        r['f_dc_%d' % i] = '%s_sh0' % ('rgb'[i])
+        
         
     return df.rename(columns=r, inplace=False)
     
@@ -75,8 +121,12 @@ def analyze_columns(df):
         cc = cc[np.isfinite(cc)]
         plt.hist(cc, bins=256); plt.title(c); plt.show()
 
-def dataframe_to_flat_array(df, keep_spherical_harmonics=False, inria=False):
-    if inria: df = rename_inria_columns(df)
+def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='nerfstudio'):
+    if input_format == 'inria':
+        df = rename_inria_columns(df)
+    elif input_format == 'nerfstudio':
+        df = rename_nerfstudio_columns(df)
+
     df = convert_data_to_splat(df)
     
     # analyze_columns(df)
@@ -110,12 +160,12 @@ if __name__ == '__main__':
         parser.add_argument('input_file', type=argparse.FileType('rb'), help='Parquet input file')
         parser.add_argument('output_file', type=argparse.FileType('wb'), help='Splat output file')
         parser.add_argument('-sh', '--keep_spherical_harmonics', action='store_true')
-        parser.add_argument('--inria', action='store_true', help='Assume Inria gaussian-splatting column names')
+        parser.add_argument('-f', '--input_format', choices=['inria', 'nerfstudio', 'taichi'], default='nerfstudio')
         return parser.parse_args()
     
     args = parse_args()
 
     df = pd.read_parquet(args.input_file)
-    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, inria=args.inria)
+    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, input_format=args.input_format)
     flat_array.tofile(args.output_file)
 
