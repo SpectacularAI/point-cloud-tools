@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import argparse
 
 def splat_columns():
     pos_cols = 'x,y,z'.split(',')
@@ -125,19 +124,50 @@ def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='ne
     
     flat_array = structured_array.view('uint8')
     return flat_array
-
-if __name__ == '__main__':
-    def parse_args():
-        parser = argparse.ArgumentParser(description='Parquet to Gaussian Splatting WebGL renderer flat data converter')
-        parser.add_argument('input_file', type=argparse.FileType('rb'), help='Parquet input file')
-        parser.add_argument('output_file', type=argparse.FileType('wb'), help='Splat output file')
-        parser.add_argument('-sh', '--keep_spherical_harmonics', action='store_true')
-        parser.add_argument('-f', '--input_format', choices=['inria', 'nerfstudio', 'taichi'], default='nerfstudio')
-        return parser.parse_args()
     
-    args = parse_args()
+def dataframe_to_splat_file(df, fn, **kwargs):
+    with open(fn, 'wb') as f:
+        dataframe_to_flat_array(df, **kwargs).tofile(f)
+    
+def splat_stream_to_data_frame(input_file):
+    float_cols, uint8_cols, uint8_types = splat_columns()
+    
+    n_p = len(uint8_cols) // 4
+    packed_cols = float_cols + ['packed_%d' % i for i in range(n_p)]
+    
+    #print(packed_cols)
 
-    df = pd.read_parquet(args.input_file)
-    flat_array = dataframe_to_flat_array(df, keep_spherical_harmonics=args.keep_spherical_harmonics, input_format=args.input_format)
-    flat_array.tofile(args.output_file)
+    flat_array = np.fromfile(input_file, dtype='uint32')
+    
+    array_reshaped = flat_array.reshape((len(packed_cols), -1), order='F').T
+    df = pd.DataFrame(array_reshaped, columns=packed_cols)
+    for c in float_cols:
+        df[c] = df[c].view(np.float32)
+        
+    unpacked_cols = {}
+    for i, c in enumerate(uint8_cols):
+        col_idx = i // 4
+        sub_idx = i % 4
+        packed_col = df['packed_%d' % col_idx]
+        scale = 1
+        
+        v0, v1 = uint8_types[c]
+        col_uint8 = (packed_col.to_numpy().astype(int) // (2**(sub_idx*8))) % 256
+        
+        #import matplotlib.pyplot as plt
+        #plt.hist(col_uint8, bins=256); plt.title(c); plt.show()
+        unpacked_cols[c] = col_uint8 * ((v1 - v0) / 255) + v0
+    
+    for i in range(n_p):
+        df.pop('packed_%d' % i)
+    
+    for c in uint8_cols:
+        df[c] = unpacked_cols[c]
+        
+    # print(df)
 
+    return df
+
+def splat_file_to_data_frame(input_file):
+    with open(input_file, 'rb') as f:
+        return splat_stream_to_data_frame(f)

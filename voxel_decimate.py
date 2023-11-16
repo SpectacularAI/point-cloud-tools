@@ -1,5 +1,5 @@
 import pandas as pd
-import argparse
+from formats.auto import load_to_dataframe, save_to_dataframe
    
 def voxel_decimate(df, cell_size):
     def grouping_function(row):
@@ -10,17 +10,19 @@ def voxel_decimate(df, cell_size):
     return grouped.first().reset_index()
  
 if __name__ == '__main__':
+    import argparse
+    
     def parse_args():
-        parser = argparse.ArgumentParser(description='Parquet point cloud converter')
-        parser.add_argument('input_file', type=argparse.FileType('rb'), help='CSV input file')
-        parser.add_argument('output_file', type=argparse.FileType('wt'), help='CSV output file')
+        parser = argparse.ArgumentParser(description='Voxel-decimation point cloud')
+        parser.add_argument('input_file', type=str, help='Input file')
+        parser.add_argument('output_file', type=str, help='Output file')
         parser.add_argument('--exclude_file', type=str, default=None, help='Exclude points in same voxels with these')
         parser.add_argument('--cell_size', type=float, default=0.1)
         return parser.parse_args()
     
     args = parse_args()
 
-    df = pd.read_csv(args.input_file)
+    df = load_to_dataframe(args.input_file)
     df = voxel_decimate(df, cell_size=args.cell_size)
-    df.to_csv(args.output_file, index=False)
+    save_to_dataframe(df, args.output_file)
 

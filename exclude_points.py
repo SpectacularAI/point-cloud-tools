@@ -1,6 +1,6 @@
 import pandas as pd
-import argparse
 from scipy.spatial import KDTree
+from formats.auto import load_to_dataframe, save_to_dataframe
    
 def exclude_points(df_source, df_exclude, radius):
     xyz = list('xyz')
@@ -14,18 +14,19 @@ def exclude_points(df_source, df_exclude, radius):
     return df_result
  
 if __name__ == '__main__':
+    import argparse
     def parse_args():
-        parser = argparse.ArgumentParser(description='Parquet point cloud converter')
-        parser.add_argument('input_source_file', type=argparse.FileType('rb'), help='CSV input file: search')
-        parser.add_argument('input_exclude_file', type=argparse.FileType('rb'), help='CSV input file: exclude points near these')
-        parser.add_argument('output_file', type=argparse.FileType('wt'), help='CSV output file')
+        parser = argparse.ArgumentParser(description='Exclude points near another point cloud')
+        parser.add_argument('input_source_file', type=str, help='Input file: search')
+        parser.add_argument('input_exclude_file', type=str, help='Input file: exclude')
+        parser.add_argument('output_file', type=str, help='Output file')
         parser.add_argument('--radius', type=float)
         return parser.parse_args()
     
     args = parse_args()
 
-    df1 = pd.read_csv(args.input_source_file)
-    df2 = pd.read_csv(args.input_exclude_file, usecols=['x','y','z'])
+    df1 = load_to_dataframe(args.input_source_file)
+    df2 = load_to_dataframe(args.input_exclude_file)[['x','y','z']]
     df3 = exclude_points(df1, df2, args.radius)
-    df3.to_csv(args.output_file, index=False)
+    save_to_dataframe(df3, args.output_file)
 

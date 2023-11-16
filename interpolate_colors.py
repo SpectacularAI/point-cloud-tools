@@ -1,6 +1,6 @@
 import pandas as pd
-import argparse
 from scipy.spatial import KDTree
+from formats.auto import load_to_dataframe, save_to_dataframe
    
 def interpolate_missing_properties(df_source, df_query, k_nearest=3):
     xyz = list('xyz')
@@ -20,17 +20,17 @@ def interpolate_missing_properties(df_source, df_query, k_nearest=3):
     return df_result
  
 if __name__ == '__main__':
+    import argparse
     def parse_args():
-        parser = argparse.ArgumentParser(description='Parquet point cloud converter')
-        parser.add_argument('input_source_file', type=argparse.FileType('rb'), help='CSV input file: search')
-        parser.add_argument('input_query_file', type=argparse.FileType('rb'), help='CSV input file: query')
-        parser.add_argument('output_file', type=argparse.FileType('wt'), help='CSV output file')
+        parser = argparse.ArgumentParser(description='Interpolate missing properties from another point cloud (kNN)')
+        parser.add_argument('input_source_file', type=str, help='Input file: search')
+        parser.add_argument('input_query_file', type=str, help='Input file: query')
+        parser.add_argument('output_file', type=str, help='Output file')
         return parser.parse_args()
     
     args = parse_args()
 
-    df1 = pd.read_csv(args.input_source_file)
-    df2 = pd.read_csv(args.input_query_file, usecols=['x','y','z'])
+    df1 = load_to_dataframe(args.input_source_file)
+    df2 = load_to_dataframe(args.input_query_file)[['x','y','z']]
     df3 = interpolate_missing_properties(df1, df2)
-    df3.to_csv(args.output_file, index=False)
-
+    save_to_dataframe(df3, args.output_file)

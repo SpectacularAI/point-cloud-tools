@@ -1,15 +1,16 @@
-import numpy as np
 import pandas as pd
-import sys
-import argparse
+import numpy as np
 import struct
+import re
 from io import StringIO
 
-def dataframe_to_pcd(df, out_file, include_rgb=False):
+# mostly ChatGPT-generated
+def dataframe_to_pcd_stream(df, out_file, include_rgb=True):
     cols = ['x', 'y', 'z']
-    if include_rgb:
+    colors = ['red', 'green', 'blue']
+    if include_rgb and all([c in df.columns or c[0] in df.columns for c in colors]):
         cols.append('rgb')
-        r,g,b = [df[c].astype(np.uint32) for c in 'rgb']
+        r,g,b = [df[c].astype(np.uint32) if c in df.columns else df[c[0]].astype(np.uint32) for c in colors]
         packed_rgb = (r * (2**16)) + (g * (2**8)) + b
         df['rgb'] = packed_rgb.apply(lambda x: struct.unpack('f', struct.pack('I', x))[0])
         
@@ -39,17 +40,7 @@ def dataframe_to_pcd(df, out_file, include_rgb=False):
     
     out_file.write(header + '\n')
     out_file.write(b.getvalue().strip())
- 
-if __name__ == '__main__':
-    def parse_args():
-        parser = argparse.ArgumentParser(description='Parquet point cloud converter')
-        parser.add_argument('input_file', type=argparse.FileType('rb'), help='Parquet input file')
-        parser.add_argument('output_file', type=argparse.FileType('wt'), help='PCD output file')
-        parser.add_argument('--rgb', action='store_true')
-        return parser.parse_args()
     
-    args = parse_args()
-
-    df = pd.read_parquet(args.input_file)
-    dataframe_to_pcd(df, args.output_file, include_rgb=args.rgb)
-
+def dataframe_to_pcd(df, out_file, **kwargs):
+    with open(out_file, 'wt') as f:
+        dataframe_to_pcd_stream(df, f, **kwargs)
