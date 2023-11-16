@@ -19,7 +19,20 @@ def splat_columns():
     for c in color_cols: uint8_ranges[c] = [0, 255]
     return float_cols, uint8_cols, uint8_ranges
 
-def convert_data_to_splat(df):
+def multiply_quaternions_wxyz(q1, q2):
+    # Extracting individual components
+    w1, x1, y1, z1 = q1[..., 0], q1[..., 1], q1[..., 2], q1[..., 3]
+    w2, x2, y2, z2 = q2[..., 0], q2[..., 1], q2[..., 2], q2[..., 3]
+
+    # Quaternion multiplication
+    w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+    x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+    y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+    z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+
+    return np.array([w, x, y, z]).T
+
+def convert_data_to_splat(df, x_is_up_to_z_is_up=False, normalize_quaternions=True):
     # already converted
     if 'r_sh0' not in df.columns: return df
     
@@ -39,11 +52,20 @@ def convert_data_to_splat(df):
         c = 'cov_s%d' % cov_i
         df[c] = np.exp(df[c]) * DEBUG_SCALING
 
-    NORMALIZE = True
-    if NORMALIZE:
+    if normalize_quaternions:
         inv_len = 1.0 / np.sqrt(np.sum(df[['cov_q%d' % i for i in range(4)]].values**2, axis=1))
         for i in range(4):
             df['cov_q%d' % i] *= inv_len
+            
+    if x_is_up_to_z_is_up:
+        df['x'], df['z'] = -df['z'], df['x']
+        
+        q_wxyz = np.array([df['cov_q%d' % i].values for i in [3, 0, 1, 2]]).T
+        rot_wxyz = np.array([np.sqrt(0.5), 0, -np.sqrt(0.5), 0])
+        q_rotated = multiply_quaternions_wxyz(rot_wxyz, q_wxyz)
+        
+        for i in range(4):
+            df['cov_q%d' % i] = q_rotated[:, [1, 2, 3, 0][i]]
             
     df['a'] = 1 / (1 + np.exp(-df['alpha0']))
     
@@ -94,12 +116,14 @@ def analyze_columns(df):
         plt.hist(cc, bins=256); plt.title(c); plt.show()
 
 def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='nerfstudio'):
+    x_is_up_to_z_is_up = False
     if input_format == 'inria':
         df = rename_inria_columns(df)
     elif input_format == 'nerfstudio':
+        x_is_up_to_z_is_up = True
         df = rename_nerfstudio_columns(df)
 
-    df = convert_data_to_splat(df)
+    df = convert_data_to_splat(df, x_is_up_to_z_is_up)
     # analyze_columns(df)
     
     float_cols, uint8_cols, uint8_ranges = splat_columns()
