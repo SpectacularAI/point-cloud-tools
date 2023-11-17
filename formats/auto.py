@@ -11,6 +11,9 @@ def load_to_dataframe(fn):
         return load_ply_to_dataframe(fn)
     elif ext == 'csv':
         return pd.read_csv(fn)
+    elif ext == 'txt':
+        # assuming COLMAP CSV format
+        return pd.read_csv(fn, sep=' ', header=None, usecols=list(range(7)), names=['id'] + list('xyzrgb')).set_index('id')
     elif ext == 'parquet':
         return pd.read_parquet(fn)
     elif ext == 'splat':
