@@ -3,6 +3,7 @@ import pandas as pd
 from .ply import load_ply_to_dataframe
 from .splat import splat_file_to_data_frame, dataframe_to_splat_file
 from .pcd import dataframe_to_pcd
+from .html import dataframe_to_gsplat_html
 
 def load_to_dataframe(fn):
     ext = fn.split('.')[-1]
@@ -36,6 +37,8 @@ def save_to_dataframe(df, fn, **kwargs):
         return dataframe_to_splat_file(df, fn, **kwargs)
     elif ext == 'pcd':
         return dataframe_to_pcd(df, fn, **kwargs)
+    elif ext == 'html':
+        return dataframe_to_gsplat_html(df, fn, **kwargs)
     elif ext == 'ply':
         raise RuntimeError("PLY export not implemented")
     else:
