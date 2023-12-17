@@ -32,19 +32,28 @@ def multiply_quaternions_wxyz(q1, q2):
 
     return np.array([w, x, y, z]).T
 
-def convert_data_to_splat(df, x_is_up_to_z_is_up=False, normalize_quaternions=True):
+def convert_data_to_splat(df, x_is_up_to_z_is_up=False, normalize_quaternions=True, use_exp_colors=False, keep_original_rgb=False):
     # already converted
     if 'r_sh0' not in df.columns: return df
-    
-    def sh_zero_order(col):
+        
+    def sh_zero_order_exp(col):
         # see https://github.com/wanmeihuali/taichi_3d_gaussian_splatting/blob/main/taichi_3d_gaussian_splatting/SphericalHarmonics.py
-        magic_coeff = 0.28209479177387814
-        normalized = magic_coeff * col
+        sh_c0_coeff = 0.28209479177387814
+        normalized = sh_c0_coeff * col
         col = 1 / (1 + np.exp(-normalized))
         return col
+        
+    def sh_zero_order_simple(col):
+        # this formula seems to work for Nerfstudio PLYs
+        return col
+        
+    if use_exp_colors:
+        sh_zero_order = sh_zero_order_exp
+    else:
+        sh_zero_order = sh_zero_order_simple
 
     for c in 'rgb':
-        if c not in df.columns:
+        if c not in df.columns or not keep_original_rgb:
             df[c] = sh_zero_order(df['%s_sh0' % c]) * 255
     
     DEBUG_SCALING = 1
@@ -117,13 +126,16 @@ def analyze_columns(df):
 
 def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='nerfstudio'):
     x_is_up_to_z_is_up = False
+    use_exp_colors = False
+    if input_format == 'taichi':
+        use_exp_colors = True
     if input_format == 'inria':
         df = rename_inria_columns(df)
     elif input_format == 'nerfstudio':
-        x_is_up_to_z_is_up = True
+        #x_is_up_to_z_is_up = True
         df = rename_nerfstudio_columns(df)
 
-    df = convert_data_to_splat(df, x_is_up_to_z_is_up)
+    df = convert_data_to_splat(df, x_is_up_to_z_is_up, use_exp_colors=use_exp_colors)
     # analyze_columns(df)
     
     float_cols, uint8_cols, uint8_ranges = splat_columns()
