@@ -24,21 +24,21 @@ def load_to_dataframe(fn):
     else:
         raise RuntimeError("unrecognized extension ." + ext)
         
-def save_to_dataframe(df, fn, **kwargs):
+def save_to_dataframe(df, fn, args):
     ext = fn.split('.')[-1]
     
     if ext == 'ply':
-        dataframe_to_pcd(df, fn, **kwargs)
+        dataframe_to_pcd(df, fn) # TODO: kwargs
     elif ext == 'csv':
         return df.to_csv(fn, index=False)
     elif ext == 'parquet':
         return df.to_parquet(fn)
     elif ext == 'splat':
-        return dataframe_to_splat_file(df, fn, **kwargs)
+        return dataframe_to_splat_file(df, fn, input_format=args.ply_input_format)
     elif ext == 'pcd':
-        return dataframe_to_pcd(df, fn, **kwargs)
+        return dataframe_to_pcd(df, fn) # TODO: kwargs
     elif ext == 'html':
-        return dataframe_to_gsplat_html(df, fn, **kwargs)
+        return dataframe_to_gsplat_html(df, fn, input_format=args.ply_input_format, scene_up_direction=args.scene_up_direction)
     elif ext == 'ply':
         raise RuntimeError("PLY export not implemented")
     else:
