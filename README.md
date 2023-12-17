@@ -19,9 +19,9 @@ Convert PLY to PCD
 
 ### Gaussian Splatting
 
-Converting a Gaussian Splatting `.ply` file to `.splat`. As of December 2023, there is not standard way of storing the
+Converting a Gaussian Splatting `.ply` file to `.splat`. As of December 2023, there is no standard way of storing the
 colors of the splats in the PLY files and different tools use different conventions. The type of the PLY file needs
-to be specified with the `--ply_input_format` argument.
+to be specified with the `--ply_input_format` argument. See options below:
 
 [**Inria format**](https://github.com/graphdeco-inria/gaussian-splatting#evaluation):
 
