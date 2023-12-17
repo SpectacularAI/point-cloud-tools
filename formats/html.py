@@ -26,20 +26,22 @@ def quat_rot_from_A_to_B(A, B):
         rotation_axis[2] * sin_half_angle
     ])
 
-HTML_TEMPLATE = '../gsplat.js.html.template'
-def dataframe_to_gsplat_html(df, fn, scene_up_direction, **kwargs):
-    template_path = os.path.join(os.path.dirname(__file__), HTML_TEMPLATE)
-    with open(template_path, 'rt') as f:
-        html_template = f.read()
-    
+DEFAULT_HTML_TEMPLATE = '../gsplat.js.html.template'
+def dataframe_to_gsplat_html(df, fn, scene_up_direction, html_template='', **kwargs):
+    if len(html_template) == 0:
+        html_template = os.path.join(os.path.dirname(__file__), DEFAULT_HTML_TEMPLATE)
+    with open(html_template, 'rt') as f:
+        html = f.read()
+
     splat_data = dataframe_to_flat_array(df, **kwargs)
     UP_DIR_TARGET = [0, 0, 1] # z-is-up
-    
+
     up_dir = [float(c) for c in scene_up_direction.split(',')]
     qw, qx, qy, qz = quat_rot_from_A_to_B(up_dir, UP_DIR_TARGET)
-    
+
     q = ', '.join([str(c) for c in [qx, qy, qz, qw]]) # wxyz -> xyzw
-    html = html_template.replace('SCENE_ROTATION_QUAT', q).replace('CORS_SUCKS', base64.b64encode(splat_data.tobytes()).decode('utf-8'))
-    
+    html = html.replace('SCENE_ROTATION_QUAT', q)
+    html = html.replace('CORS_SUCKS', base64.b64encode(splat_data.tobytes()).decode('utf-8'))
+
     with open(fn, 'wt') as f:
         f.write(html)

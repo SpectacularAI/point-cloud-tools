@@ -15,6 +15,7 @@ if __name__ == '__main__':
         # All arguments are not supported for all conversion types
         parser.add_argument('--scene_up_direction', '-up', default='0,0,1')
         parser.add_argument('--ply_input_format', default='nerfstudio')
+        parser.add_argument('--html_template', default='')
         return parser.parse_args()
     
     args = parse_args()
