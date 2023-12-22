@@ -40,7 +40,6 @@ def save_to_dataframe(df, fn, args):
     elif ext == 'html':
         return dataframe_to_gsplat_html(df, fn,
             input_format=args.ply_input_format,
-            scene_up_direction=args.scene_up_direction,
             html_template=args.html_template)
     elif ext == 'ply':
         raise RuntimeError("PLY export not implemented")

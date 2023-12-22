@@ -23,7 +23,7 @@
         <div id="data" data-base64="CORS_SUCKS"></div>
 
         <script type="module">
-        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@0.2.12";
+        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@1.0.1";
 
         const canvas = document.getElementById("canvas");
         const dataContainer = document.getElementById('data');
@@ -45,8 +45,8 @@
         async function main() {
             const base64Data = dataContainer.dataset.base64;
             const binaryData = base64ToUint8Array(base64Data);
-            scene.setData(binaryData);
-            scene.rotate(new SPLAT.Quaternion(SCENE_ROTATION_QUAT));
+            const splat = new SPLAT.Splat(SPLAT.SplatData.Deserialize(binaryData));
+            scene.addObject(splat);
 
             const handleResize = () => {
                 renderer.setSize(window.innerWidth, window.innerHeight);
