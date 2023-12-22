@@ -23,7 +23,7 @@ Convert PLY to PCD
 colors of the splats in the PLY files and different tools use different conventions. The type of the PLY file needs
 to be specified with the `--ply_input_format` argument. See options below:
 
-[**Inria format**](https://github.com/graphdeco-inria/gaussian-splatting#evaluation):
+[**Inria format**](https://github.com/graphdeco-inria/gaussian-splatting#evaluation) (NOTE: may also work for newer versions of Nerfstudio):
 
     python convert.py \
         /PATH/TO/bonsai/point_cloud/iteration_30000/point_cloud.ply \
