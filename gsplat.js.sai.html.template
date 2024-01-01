@@ -36,7 +36,7 @@
         <a class="logo-link" href="https://www.spectacularai.com/mapping"><img src="https://spectacularai.github.io/docs/png/SpectacularAI-logo-small-white-transparent-shadow.png"/></a>
 
         <script type="module">
-        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@1.0.1";
+        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@1.0.2";
 
         const canvas = document.getElementById("canvas");
         const dataContainer = document.getElementById('data');
