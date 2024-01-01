@@ -61,3 +61,23 @@ def load_ply_to_dataframe(ply_file):
     with open(ply_file, 'rb') as f:
         return load_ply_stream_to_dataframe(f)
     load_ply_to_dataframe
+    
+
+def generate_ply_header(df):
+    header = "ply\nformat binary_little_endian 1.0\n"
+    header += f"element vertex {len(df)}\n"
+    for column in df.columns:
+        header += f"property float {column}\n"
+
+    header += "end_header\n"
+    return header
+
+def dataframe_to_ply(df, output_file):
+    header = generate_ply_header(df)
+
+    with open(output_file, 'wb') as f:
+        f.write(header.encode())
+        for _, row in df.iterrows():
+            for column in df.columns:
+                f.write(struct.pack('f', row[column]))
+

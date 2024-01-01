@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .ply import load_ply_to_dataframe
+from .ply import load_ply_to_dataframe, dataframe_to_ply
 from .splat import splat_file_to_data_frame, dataframe_to_splat_file
 from .pcd import dataframe_to_pcd
 from .html import dataframe_to_gsplat_html
@@ -28,7 +28,7 @@ def save_to_dataframe(df, fn, args):
     ext = fn.split('.')[-1]
     
     if ext == 'ply':
-        dataframe_to_pcd(df, fn) # TODO: kwargs
+        dataframe_to_ply(df, fn)
     elif ext == 'csv':
         return df.to_csv(fn, index=False)
     elif ext == 'parquet':
