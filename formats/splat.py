@@ -45,10 +45,10 @@ def convert_data_to_splat(df, x_is_up_to_z_is_up=False, normalize_quaternions=Tr
         
     if color_format == 'taichi':
         sh_zero_order = sh_zero_order_exp # may not be correct either
-    elif color_format == 'inria':
+    elif color_format in ['inria', 'nerfstudio']:
         # not 100% sure this is correct
         sh_zero_order = lambda x: x*sh_c0_coeff + 0.5
-    elif color_format == 'nerfstudio':
+    elif color_format == 'nerfstudio-legacy':
         sh_zero_order = lambda x: x
 
     for c in 'rgb':
@@ -124,7 +124,6 @@ def analyze_columns(df):
         plt.hist(cc, bins=256); plt.title(c); plt.show()
 
 def dataframe_to_flat_array(df, keep_spherical_harmonics=False, input_format='nerfstudio'):
-    use_exp_colors = False
     if input_format == 'inria':
         df = rename_inria_columns(df)
     elif input_format == 'nerfstudio':

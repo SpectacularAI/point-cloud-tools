@@ -19,18 +19,7 @@ Convert PLY to PCD
 
 ### Gaussian Splatting
 
-**Converting `.ply` file to `.splat`**. As of December 2023, there is no standard way of storing the
-colors of the splats in the PLY files and different tools use different conventions. The type of the PLY file needs
-to be specified with the `--ply_input_format` argument. See options below:
-
-[**Inria format**](https://github.com/graphdeco-inria/gaussian-splatting#evaluation) (NOTE: may also work for newer versions of Nerfstudio):
-
-    python convert.py \
-        /PATH/TO/bonsai/point_cloud/iteration_30000/point_cloud.ply \
-        /OUT/PATH/bonsai.splat \
-       --ply_input_format=inria
-
-[**Nerfstudio format**](https://github.com/nerfstudio-project/nerfstudio)
+**Converting `.ply` file to `.splat`**.
 
     # Example of Gaussian Splatting training
     ns-train gaussian-splatting --data /PATH/TO/my-input
@@ -38,15 +27,12 @@ to be specified with the `--ply_input_format` argument. See options below:
 
     python convert.py \
         exports/splat/point_cloud.ply \
-        /OUT/PATH/my-splat.splat \
-       --ply_input_format=nerfstudio
+        /OUT/PATH/my-splat.splat
 
 **Converting `.ply` file to a standalone `.html`** (powered by [gsplat.js](https://github.com/dylanebert/gsplat.js)).
-The discussion on `--ply_input_format` above also applies here.
 
     python convert.py \
         exports/splat/point_cloud.ply \
-        /OUT/PATH/my-splat.html \
-       --ply_input_format=...
+        /OUT/PATH/my-splat.html
 
 **Creating Gaussian Splatting `.ply` from smartphone data**: See [Spectacular AI Mapping Tools](https://github.com/SpectacularAI/sdk-examples/tree/main/python/mapping)
