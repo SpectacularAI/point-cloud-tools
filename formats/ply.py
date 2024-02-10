@@ -24,36 +24,56 @@ def parse_ply_header(ply_file):
             header['properties'].append((property_name.decode('ascii'), property_type.decode('ascii')))
             
     return header
+    
+PLY_TYPE_MAPPING = {
+    'float': 'f',
+    'double': 'd',
+    'int': 'i',
+    'uint8': 'B',
+    'uchar': 'B',
+    'char': 'b',
+    'uint': 'I',
+    'ushort': 'H',
+    'short': 'h'
+}
  
 def read_binary_ply_data(ply_file, header):
-    type_mapping = {
-        'float': 'f',
-        'double': 'd',
-        'int': 'i',
-        'uchar': 'B',
-        'char': 'b',
-        'uint': 'I',
-        'ushort': 'H',
-        'short': 'h'
-    }
     endian_char = '<' if header['format'] == 'binary_little_endian' else '>'
-    format_string = endian_char + ''.join(type_mapping[ptype] for pname, ptype in header['properties'])
+    format_string = endian_char + ''.join(PLY_TYPE_MAPPING[ptype] for pname, ptype in header['properties'])
     vertex_size = struct.calcsize(format_string)
     vertices = [
         struct.unpack(format_string, ply_file.read(vertex_size))
         for _ in range(header['vertex_count'])
     ]
-    dtypes = [(pname, type_mapping[ptype]) for pname, ptype in header['properties']]
+    dtypes = [(pname, PLY_TYPE_MAPPING[ptype]) for pname, ptype in header['properties']]
     structured_array = np.array(vertices, dtype=dtypes)
     
+    return structured_array
+   
+def read_ascii_ply_data(ply_file, header):    
+    dtypes = [(pname, PLY_TYPE_MAPPING[ptype]) for pname, ptype in header['properties']]
+    
+    vertices = []
+    
+    for _ in range(header['vertex_count']):
+        line = ply_file.readline().strip()
+        values = line.split()
+        vertex = tuple([float(v.decode('ascii')) for v in values]) # hacky
+        vertices.append(vertex)
+    
+    structured_array = np.array(vertices, dtype=dtypes)
     return structured_array
     
 def load_ply_stream_to_dataframe(ply_file):
     header = parse_ply_header(ply_file)
     # print(header)
-    if header['format'] != 'binary_little_endian' and header['format'] != 'binary_big_endian':
-        raise ValueError('PLY file is not in binary format.')
-    structured_array = read_binary_ply_data(ply_file, header)
+    
+    if header['format'] in ['binary_little_endian', 'binary_big_endian']:
+        structured_array = read_binary_ply_data(ply_file, header)
+    elif header['format'] == 'ascii':
+        structured_array = read_ascii_ply_data(ply_file, header)
+    else:
+        raise ValueError('invalid PLY header format')
     df = pd.DataFrame(structured_array)
     return df
 
