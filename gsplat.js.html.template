@@ -23,7 +23,7 @@
         <div id="data" data-base64="CORS_SUCKS"></div>
 
         <script type="module">
-        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@1.0.2";
+        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@1.2.3";
 
         const canvas = document.getElementById("canvas");
         const dataContainer = document.getElementById('data');
