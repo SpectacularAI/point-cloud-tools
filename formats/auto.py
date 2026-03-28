@@ -24,7 +24,7 @@ def load_to_dataframe(fn):
     else:
         raise RuntimeError("unrecognized extension ." + ext)
         
-def save_to_dataframe(df, fn, args):
+def save_to_dataframe(df, fn, args=None):
     ext = fn.split('.')[-1]
     
     if ext == 'ply':
